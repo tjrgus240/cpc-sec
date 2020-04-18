@@ -1,0 +1,78 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+
+#MovieScrapper 클래스 선언
+class MovieScraper :
+
+    def __init__(self) : 
+        self.url = "https://movie.naver.com/movie/running/current.nhn"
+
+# utl을 받아오고, 접속 상태 확인하는 HTML 함수
+    def HTML(self) :
+        req = requests.get(self.url)
+
+        if req.status_code != 200 :
+            print(req.status_code, "failed")
+
+        html = req.text
+        soup = BeautifulSoup(html, "html.parser")
+
+        return soup
+
+# 네이버 현재 상영 중인 영화의 제목, 제한 연령, 평점, 예매율, 장르를 각 리스트에 추가하는 Datas 함수
+    def Datas(self) :
+        n = 0
+        title = []
+        age = []
+        rate = []
+        ticket = []
+        genre = []
+        num = ["all","12","15","18"]
+
+        soup = self.HTML()
+        movie = soup.find_all("dl", class_ = "lst_dsc")
+        for m in movie :    
+            movielist = m.find("dt", class_ = "tit")
+            star = m.find("dl", class_ = "info_star")
+            info = m.find("dl", class_ = "info_txt1")
+            buyticket = m.find("div", class_ = "star_t1 b_star")
+        
+            title.append(movielist.find("a").text)
+            for n in num :
+                if movielist.find("span", class_ ="ico_rating_"+ n) != None :
+                    age.append(movielist.find("span", class_= "ico_rating_"+ n).text)
+            
+            rate.append(star.find("span", class_ = "num").text + "점")
+            
+            
+            if buyticket != None :
+                ticket.append(buyticket.find("span", class_ = "num").text + "%")
+            else :
+                ticket.append("0%")
+
+            genre.append(info.find("span", class_ = "link_txt").text.replace("\t", "").replace("\n", "").replace("\r", ""))
+            
+        self.writeCSV(title, age, rate, ticket, genre)
+
+# CSV 파일을 열고 입력 준비하는 writeCSV 함수      
+    def writeCSV(self, title, age, rate, ticket, genre) :
+        file = open("movie.csv", "a", newline = "")
+        wr = csv.writer(file)
+
+        for r in range(len(title)) : 
+            wr.writerow([title[r], age[r], rate[r], ticket[r], genre[r]])
+        file.close()
+
+# 제목, 제한 연령, 평점, 예매율, 장르 라는 셀에 데이터를 입력하는 scrap 함수
+    def scrap(self) :
+        file = open("movie.csv", "w", newline="")
+        wr = csv.writer(file)
+        wr.writerow(["제목", "제한 연령", "평점", "예매율", "장르"])
+        file.close()
+        
+        self.Datas()
+
+if __name__ == "__main__":
+    scraper = MovieScraper()
+    scraper.scrap()
