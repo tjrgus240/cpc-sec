@@ -1,0 +1,57 @@
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from bs4 import BeautifulSoup
+import os
+import time
+
+path = os.getcwd() + "/6th/chromedriver.exe"
+driver = webdriver.Chrome(path)
+# 네이버 뮤직에서 다비치의 음악을 인기도 순으로 250개 크롤링하기
+try :
+    driver.get("https://music.naver.com/")
+    time.sleep(3)
+    #네이버 뮤직 접속 (접속 대기 시간 3초 설정)
+
+    searchSinger = "다비치" 
+    singerName = driver.find_element_by_class_name("input_text")
+    # 네이버 뮤직 검색창에 다비치 입력
+    singerName.send_keys(searchSinger)
+    driver.find_element_by_class_name("btn").click()
+    time.sleep(1)
+    # 검색 버튼을 눌러 다비치를 검색한 후 대기
+    driver.find_element_by_xpath('//*[@id="content"]/div[4]/a').click()
+    time.sleep(1)
+    # 곡 더보기 버튼을 눌러 곡들만 있는 페이지로 접속한 후 대기
+    driver.find_element_by_xpath('//*[@id="content"]/div[3]/div[2]/div/a[2]').click()
+    time.sleep(1)
+    # 곡들을 인기도 순으로 정렬한 후 대기
+
+
+    song = []
+
+    for i in range(5) :
+        driver.get("https://music.naver.com/search/search.nhn?query=%eb%8b%a4%eb%b9%84%ec%b9%98&target=track&page=" + str(i + 1))
+        time.sleep(3)
+        # 인기순으로 배열된 곡들이 한 페이지 당 50개 씩 존재, 5번 반복하여 250개의 곡 리스트들을 웹사이트에서 받아야하므로, 페이지를 5번 받음
+        html = driver.page_source
+        bs = BeautifulSoup(html, "html.parser")
+        # html parser 및 page source 기초 세팅
+        name = bs.find_all("td", class_ = "name")
+        song.append("page " + str(i +1))
+        for n in name :
+            if n.find("span", class_ = "ellipsis") != None :
+                song.append(n.find("span", class_ = "ellipsis").text)
+        # 곡들을 song list에 추가하는 과정
+        
+
+finally :
+    for s in song :
+        if s.find("page") != -1 :
+            print()
+            print(s)
+        else :
+            print(s)
+    # 이쁜 모양으로 정렬하여 출력하는 과정
+    time.sleep(3)
+    driver.quit()
+    # 대기한 후 종료(사이트 닫음)
